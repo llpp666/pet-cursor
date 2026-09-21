@@ -12,6 +12,7 @@ __pycache__/
 # ---- 打包产物 / 构建中间文件 ----
 发布/
 build_release/
+release_pkg/
 dist/
 build*/
 d*_dist/
@@ -37,6 +38,7 @@ d10_probe.py
 e2e_matting.py
 e2e_privacy.py
 test_community.py
+_smoke.py
 probe.py
 probe.spec
 tmp_shell.py

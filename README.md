@@ -5,6 +5,35 @@
 
 仓库地址：https://github.com/llpp666/pet-cursor
 
+## 📥 下载
+
+### 普通用户（不用装 Python）
+
+到 **[Releases 页面](https://github.com/llpp666/pet-cursor/releases)** 下载
+`小虫光标-Windows.zip`，**解压到任意文件夹**（不要直接在压缩包里运行），
+双击 **`启动工具.bat`** 即可。整个文件夹可以拷到 U 盘带走在别的电脑上用。
+
+> ⚠️ Windows 可能会弹「Windows 已保护你的电脑」（SmartScreen），
+> 点 **更多信息 → 仍要运行**。原因是 exe 没有购买代码签名证书（一年几千元），
+> 个人开源项目普遍如此，不影响使用。介意的话可以自己用 pyinstaller 从源码打包。
+
+### 开发者（从源码跑）
+
+```bash
+git clone https://github.com/llpp666/pet-cursor.git
+cd pet-cursor
+pip install Pillow
+python server.py          # 浏览器打开 http://127.0.0.1:8899
+```
+
+想用 AI 抠图再装（约 170MB 模型，装不上会自动回退简易去背景）：
+
+```bash
+pip install "rembg[cpu]"
+```
+
+> 源码方式**不包含打包好的 exe**，需要的话跑 `pyinstaller 小虫光标.spec` 自己生成。
+
 ## 两种运行方式
 
 | 入口 | 特点 |
@@ -166,10 +195,14 @@ Windows 弹右键菜单、重启资源管理器、UAC 弹窗时会临时把光�
 图标库就是仓库里的 `catalog.json` + `icons/`，**谁都能提 PR 加图标**。
 软件启动时可以自动从 GitHub 拉最新的图标清单，只下载、不上传。
 
-启用方法：把 `community.example.json` 复制成 `community.json`，填仓库地址：
+**默认已开启**：软件启动时自动从本项目仓库拉图标清单，只下载、不上传。
+
+想换成自己 Fork 的仓库、或彻底关掉，在软件目录建一个 `community.json`
+（参考同目录的 `community.example.json`）：
 
 ```json
-{ "repo": "llpp666/pet-cursor", "branch": "main" }   ← 本项目自己的地址，可直接用
+{ "repo": "你的用户名/仓库名", "branch": "main" }   ← 换成自己的
+{ "repo": "" }                                      ← 彻底关闭
 ```
 
 - 走 jsDelivr 分发（`fastly` 节点，`cdn` 节点在国内常被掐断）

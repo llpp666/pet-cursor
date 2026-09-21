@@ -1,4 +1,5 @@
 {
+  "_说明": "复制到软件目录并改名为 community.json 才生效。不建这个文件 = 用官方默认图标库 llpp666/pet-cursor。",
   "repo": "",
   "branch": "main"
 }

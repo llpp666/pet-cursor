@@ -1,7 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('web', 'web'), ('catalog.json', '.'), ('icons', 'icons'), ('C:/Users/lenovo/AppData/Local/PetCursor/models/u2netp.onnx', 'models')]
+# 内置 AI 抠图模型（可选）：本机没有就跳过，软件会自动回退到简易去背景
+_u2netp = os.path.join(os.environ.get('LOCALAPPDATA', ''), 'PetCursor', 'models', 'u2netp.onnx')
+
+datas = [('web', 'web'), ('catalog.json', '.'), ('icons', 'icons')]
+if os.path.exists(_u2netp):
+    datas.append((_u2netp, 'models'))
+else:
+    print('[warn] 未找到 %s，打出来的包将不含内置抠图模型' % _u2netp)
 binaries = []
 hiddenimports = ['numpy', 'onnxruntime']
 tmp_ret = collect_all('PIL')

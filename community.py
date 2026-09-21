@@ -48,18 +48,37 @@ _state = {
 _lock = threading.Lock()
 
 
+# 没有 community.json 时的默认仓库（本项目官方图标库）。
+# 想彻底关掉：新建一个 community.json 写 {"repo": ""}
+DEFAULT_REPO = "llpp666/pet-cursor"
+DEFAULT_BRANCH = "main"
+
+
 # ---------------------------------------------------------------- 配置
 def load_config():
-    """读 community.json；没有就退回 example（repo 为空即关闭）"""
-    path = CONFIG_FILE if os.path.exists(CONFIG_FILE) else CONFIG_EXAMPLE
-    try:
-        with open(path, encoding="utf-8") as f:
-            cfg = json.load(f)
-    except Exception:
-        cfg = {}
-    repo = str(cfg.get("repo", "") or "").strip().strip("/")
-    branch = str(cfg.get("branch", "main") or "main").strip() or "main"
+    """读 community.json；文件不存在就用官方默认仓库（这样下载 exe 的人开箱即用）
+
+    repo 为空字符串 = 明确关闭该功能。
+    """
+    repo, branch = DEFAULT_REPO, DEFAULT_BRANCH
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, encoding="utf-8") as f:
+                cfg = json.load(f)
+        except Exception:
+            cfg = {}
+        # 只有显式写了 repo 字段才覆盖；留空 = 关闭
+        if "repo" in cfg:
+            repo = str(cfg.get("repo", "") or "").strip().strip("/")
+        if cfg.get("branch"):
+            branch = str(cfg["branch"]).strip() or DEFAULT_BRANCH
     return repo, branch
+
+
+# 模块一加载就按配置填好状态，这样 UI 打开时就能立刻显示「已启用、同步中」，
+# 而不是等后台线程跑完 sync() 才变
+_state["repo"], _state["branch"] = load_config()
+_state["enabled"] = bool(_state["repo"])
 
 
 def status():
