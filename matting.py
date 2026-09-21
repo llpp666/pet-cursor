@@ -93,8 +93,6 @@ _BUNDLED_MODEL_URL = (
     "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx"
 )
 _BUNDLED_MODEL_MD5 = "8e83ca70e441ab06c318d82300c84806"
-_bundled_session = [None]
-_bundled_lock = threading.Lock()
 
 
 def _local_models():
@@ -488,20 +486,39 @@ def _bundled_model_path(download=False):
             pass
 
 
-def _bundled_remove_bg(img):
-    """只用发布包内的 NumPy + ONNX Runtime 执行 U²-Net 推理。"""
+def _preload_system_runtime():
+    """子进程里优先加载系统的 VC 运行库，绕开包内那份版本不合的。
+
+    系统缺这些 DLL 时静默跳过，继续用包内自带的。
+    """
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+    except Exception:
+        return
+    root = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32")
+    for name in ("vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll",
+                 "msvcp140_2.dll", "concrt140.dll", "vcomp140.dll"):
+        p = os.path.join(root, name)
+        if os.path.exists(p):
+            try:
+                ctypes.WinDLL(p)
+            except OSError:
+                pass
+
+
+def _bundled_infer_into(src, dst, model_path):
+    """进程内推理：读 src 图，跑 U²-Net，写 dst（RGBA PNG）。失败抛异常。"""
     import numpy as np
     import onnxruntime as ort
+    from PIL import Image
 
-    with _bundled_lock:
-        model_path = _bundled_model_path(download=True)
-        if _bundled_session[0] is None:
-            _bundled_session[0] = ort.InferenceSession(
-                model_path, providers=["CPUExecutionProvider"]
-            )
-        session = _bundled_session[0]
+    rgba = Image.open(src).convert("RGBA")
+    session = ort.InferenceSession(
+        model_path, providers=["CPUExecutionProvider"]
+    )
 
-    rgba = img.convert("RGBA")
     resized = rgba.convert("RGB").resize((320, 320), Image.Resampling.LANCZOS)
     array = np.asarray(resized, dtype=np.float32) / 255.0
     mean = np.asarray((0.485, 0.456, 0.406), dtype=np.float32)
@@ -521,7 +538,171 @@ def _bundled_remove_bg(img):
     mask = ImageChops.multiply(mask, rgba.getchannel("A"))
     result = rgba.copy()
     result.putalpha(mask)
-    return result
+    result.save(dst, "PNG")
+
+
+def _read_tail(path, limit=300):
+    try:
+        return (open(path, encoding="utf-8", errors="replace").read()
+                .strip().replace("\n", " | ")[-limit:])
+    except OSError:
+        return ""
+
+
+def _bundled_worker(args, wait_files, timeout):
+    """起一个 exe 自身的 --matting-worker 子进程，等它产出 wait_files。
+
+    返回 (是否成功, 日志尾巴)。子进程崩溃只丢这一单 AI，主服务不受影响。
+    """
+    if not getattr(sys, "frozen", False):
+        return False, "worker 仅在打包版可用"
+    flags = 0x08000000 if os.name == "nt" else 0        # CREATE_NO_WINDOW
+    log_file = args[-1]
+    try:
+        p = _popen_external(
+            [sys.executable, "--matting-worker"] + list(args),
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL, creationflags=flags,
+        )
+    except Exception as e:
+        _dbg("worker Popen EXC %s: %s" % (type(e).__name__, e))
+        return False, "%s: %s" % (type(e).__name__, e)
+    end = time.time() + timeout
+    while time.time() < end:
+        if all(os.path.exists(f) for f in wait_files):
+            _kill(p)
+            return True, ""
+        if p.poll() is not None:
+            time.sleep(0.4)
+            if all(os.path.exists(f) for f in wait_files):
+                return True, ""
+            return False, _read_tail(log_file) or "worker 提前退出（rc=%s）" % p.returncode
+        time.sleep(0.3)
+    _kill(p)
+    return False, "超时 %ss 未产出" % timeout
+
+
+# 内置引擎的体检结果：unknown=还没测 / ok / fail
+_BUNDLED_PROBE = {"started": False, "state": "unknown", "detail": ""}
+_bundled_probe_lock = threading.Lock()
+
+
+def _bundled_probe_worker():
+    tmp = tempfile.mkdtemp(prefix="petbw_")
+    ok = os.path.join(tmp, "ok.txt")
+    log = os.path.join(tmp, "probe.log")
+    try:
+        model = _bundled_model_path(download=False)
+        args = ["probe", ok, log]
+        if model:
+            args.append(model)          # 有模型就顺带把推理会话建起来
+        good, tail = _bundled_worker(args, [ok], 150)
+        _BUNDLED_PROBE["state"] = "ok" if good else "fail"
+        _BUNDLED_PROBE["detail"] = "" if good else (
+            tail or "worker 未产出结果（可能已崩溃）")
+        _dbg("bundled probe -> %s %s" % (
+            _BUNDLED_PROBE["state"], _BUNDLED_PROBE["detail"][:200]))
+    except Exception as e:
+        _BUNDLED_PROBE["state"] = "fail"
+        _BUNDLED_PROBE["detail"] = "%s: %s" % (type(e).__name__, e)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def ensure_bundled_probe():
+    """后台体检一次内置引擎（import onnxruntime + 建推理会话）。
+
+    必须在子进程里测：万一 onnxruntime 在主进程里加载就硬崩，
+    服务会当场死掉 —— 那正是要修的 bug。
+    """
+    if _BUNDLED_PROBE["started"]:
+        return
+    with _bundled_probe_lock:
+        if _BUNDLED_PROBE["started"]:
+            return
+        _BUNDLED_PROBE["started"] = True
+        threading.Thread(target=_bundled_probe_worker, daemon=True).start()
+
+
+def _bundled_remove_bg(img):
+    """发布包内置引擎。打包版把推理放进子进程：
+    就算 onnxruntime 把子进程搞崩，主服务也活着，用户只会看到
+    「AI 抠图失败，已改用简易去背景」而不是整个软件失联。"""
+    model = _bundled_model_path(download=True)      # 失败会抛，由上层接住
+    if getattr(sys, "frozen", False):
+        tmp = tempfile.mkdtemp(prefix="petbi_")
+        src = os.path.join(tmp, "in.png")
+        dst = os.path.join(tmp, "out.png")
+        done = os.path.join(tmp, "done.txt")
+        log = os.path.join(tmp, "worker.log")
+        try:
+            img.convert("RGBA").save(src)
+            good, tail = _bundled_worker(
+                ["run", src, dst, model, done, log], [done], 120)
+            if not good:
+                raise RuntimeError("内置引擎推理失败"
+                                   + (("：" + tail) if tail else "（子进程未响应）"))
+            return Image.open(dst).convert("RGBA")
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+    # 源码模式（极少走到这里）：直接进程内推理
+    tmp = tempfile.mkdtemp(prefix="petbi_")
+    src = os.path.join(tmp, "in.png")
+    dst = os.path.join(tmp, "out.png")
+    try:
+        img.convert("RGBA").save(src)
+        _bundled_infer_into(src, dst, model)
+        return Image.open(dst).convert("RGBA")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def worker_main(argv):
+    """exe 以 --matting-worker 启动时进入这里。
+
+    在这个独立进程里 import onnxruntime / 跑推理 —— 它崩了也只是
+    这个子进程死掉，主服务进程毫发无损。
+    argv: [--matting-worker, probe, ok_file, log_file[, model]]
+          [--matting-worker, run, src, dst, model, done, log]
+    """
+    _preload_system_runtime()
+    i = list(argv).index("--matting-worker")
+    args = list(argv)[i + 1:]
+    mode = args[0] if args else ""
+    if mode == "probe":
+        _m, ok_file, log_file = args[0], args[1], args[2]
+        model = args[3] if len(args) > 3 else None
+        lf = open(log_file, "w", encoding="utf-8", buffering=1)
+        try:
+            import numpy
+            lf.write("numpy %s\n" % numpy.__version__)
+            import onnxruntime as ort
+            lf.write("ort %s\n" % ort.__version__)
+            if model:
+                ort.InferenceSession(model, providers=["CPUExecutionProvider"])
+                lf.write("session ok\n")
+            lf.write("DONE\n")
+            open(ok_file, "w").write("ok")
+        except Exception:
+            import traceback
+            lf.write(traceback.format_exc())
+        finally:
+            lf.flush()
+        return 0
+    if mode == "run":
+        _m, src, dst, model, done, log_file = args
+        lf = open(log_file, "w", encoding="utf-8", buffering=1)
+        try:
+            _bundled_infer_into(src, dst, model)
+            lf.write("saved\nDONE\n")
+            open(done, "w").write("done")
+        except Exception:
+            import traceback
+            lf.write(traceback.format_exc())
+        finally:
+            lf.flush()
+        return 0
+    return 2
 
 
 def engine_status():
@@ -536,7 +717,17 @@ def engine_status():
             return True, False, "首次使用需下载模型（约 5MB），请稍候"
         return True, True, "AI 引擎已就绪（%s）" % name
     if _bundled_engine_available():
+        # 文件在 ≠ 引擎能用：onnxruntime 是原生 DLL，缺系统运行库时加载就崩。
+        # 真正的体检放到子进程里做，结果只在这里被读取，绝不阻塞。
+        ensure_bundled_probe()
         model_ready = _bundled_model_path() is not None
+        state = _BUNDLED_PROBE["state"]
+        if state == "unknown":
+            return True, model_ready, "正在检测内置 AI 引擎…（首次约几秒）"
+        if state == "fail":
+            return False, model_ready, (
+                "内置 AI 引擎启动不了（%s），已自动改用简易去背景"
+                % (_BUNDLED_PROBE["detail"][:90] or "未知原因"))
         if model_ready:
             return True, True, "AI 引擎已就绪（内置 U²-Net）"
         return True, False, "首次使用需下载模型（约 5MB），请稍候"

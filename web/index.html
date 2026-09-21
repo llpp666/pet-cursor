@@ -654,6 +654,13 @@ $("#pwOk").onclick = async ()=>{
 $("#pwInput").addEventListener("keydown", e=>{ if(e.key === "Enter") $("#pwOk").click(); });
 $("#pwInput2").addEventListener("keydown", e=>{ if(e.key === "Enter") $("#pwOk").click(); });
 
+function fetchFailTip(e){
+  const s = String(e || "");
+  if(s.includes("Failed to fetch") || s.includes("NetworkError") || s.includes("Load failed"))
+    return "软件服务已停止响应，请关掉本窗口，重新双击「小虫光标.exe」再试";
+  return s;
+}
+
 async function uploadFile(f){
   if(!f.type.startsWith("image/")){ toast("只支持图片文件"); return; }
   const scope = (document.querySelector('input[name=scope]:checked')||{}).value || "private";
@@ -675,7 +682,7 @@ async function uploadFile(f){
     if($("#autoMatt").checked) await mattingIcon(r.item.id);
     else await reload();
   }
-  else toast("上传失败：" + r.error);
+  else toast("上传失败：" + fetchFailTip(r.error));
 }
 
 async function mattingIcon(id){
@@ -688,7 +695,7 @@ async function mattingIcon(id){
     else toast("⚠️ 这次没能用 AI 抠图：" + (r.msg||"引擎不可用") + "，结果是简易去背景，可能看不出变化", 6000);
     await reload();
   }
-  else toast("抠图失败：" + r.error);
+  else toast("抠图失败：" + fetchFailTip(r.error));
 }
 
 async function loadMattStatus(){

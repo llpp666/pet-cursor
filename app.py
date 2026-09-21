@@ -14,7 +14,7 @@ import time
 import urllib.request
 
 APP_NAME = "小虫光标"
-PORT = 8899
+PORT = int(os.environ.get("PETCURSOR_PORT", "8899"))
 URL = f"http://127.0.0.1:{PORT}"
 FROZEN = getattr(sys, "frozen", False)
 
@@ -160,6 +160,14 @@ def open_native_window(url):
 
 def main():
     args = [a.lower() for a in sys.argv[1:]]
+    raw_args = sys.argv[1:]
+
+    # AI 抠图 worker：由主服务以独立子进程方式拉起，专跑 onnxruntime 推理。
+    # 它崩了只丢这一单 AI，主服务（主进程）不受影响 —— 对应 matting.worker_main。
+    if "--matting-worker" in raw_args:
+        sys.path.insert(0, base_dir())
+        import matting  # noqa: E402
+        return matting.worker_main(sys.argv)
 
     # 纯守护模式：不启服务、不开窗口，只在后台守住光标（开机自启用）
     if "--guard-only" in args:

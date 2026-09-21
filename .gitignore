@@ -13,7 +13,9 @@ __pycache__/
 发布/
 build_release/
 release_pkg/
+release_pkg*/
 dist/
+dist*/
 build*/
 d*_dist/
 d*_work/

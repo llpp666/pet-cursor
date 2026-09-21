@@ -19,8 +19,10 @@ import sys
 import zipfile
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(BASE, "dist", "小虫光标")
-OUT_DIR = os.path.join(BASE, "release_pkg")
+# 打包输出目录可用环境变量覆盖（默认 dist）：dist 目录被占用/锁定时，
+# 用 --distpath dist2 打包后设 PETCURSOR_DIST_DIR=dist2 再跑本脚本
+SRC = os.path.join(BASE, os.environ.get("PETCURSOR_DIST_DIR", "dist"), "小虫光标")
+OUT_DIR = os.path.join(BASE, os.environ.get("PETCURSOR_RELEASE_DIR", "release_pkg"))
 PKG = os.path.join(OUT_DIR, "小虫光标")
 ZIP = os.path.join(OUT_DIR, "PetCursor-Windows.zip")
 

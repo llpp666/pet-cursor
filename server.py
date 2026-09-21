@@ -52,7 +52,7 @@ LOCAL_DIR = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~
 PRIVATE_DIR = os.path.join(LOCAL_DIR, "private_icons")
 SHARED_CATALOG = os.path.join(SHARED_DIR, "catalog.json")
 PRIVATE_CATALOG = os.path.join(PRIVATE_DIR, "catalog.json")
-PORT = 8899
+PORT = int(os.environ.get("PETCURSOR_PORT", "8899"))
 
 
 # ---------------------------------------------------------------- 开机守护
