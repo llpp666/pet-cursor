@@ -48,6 +48,12 @@ d*_path.txt
 d*_run.txt
 tmp_shell_out.txt
 
+# ---- 推送/网络排查临时输出 ----
+push_*.txt
+proxy_*.txt
+verify*.txt
+_verify.py
+
 # ---- 调试截图 / 演示图 ----
 ui*_*.png
 preview_*.png
