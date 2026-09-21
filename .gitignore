@@ -1,0 +1,58 @@
+# ---- 用户数据：绝不能进仓库 ----
+user_icons/
+private_icons/
+community.json
+小蝴蝶编号.json
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+
+# ---- 打包产物 / 构建中间文件 ----
+发布/
+build_release/
+dist/
+build*/
+d*_dist/
+d*_work/
+d*_spec/
+tmp_*/
+*.manifest
+*.toc
+
+# ---- 日志 ----
+*.log
+
+# ---- 调试脚本与临时输出（开发期排查用，不属于产品） ----
+d2_probe.py
+d3_probe.py
+d4_probe.py
+d5_probe.py
+d6_probe.py
+d7_probe.py
+d8_probe.py
+d9_probe.py
+d10_probe.py
+e2e_matting.py
+test_community.py
+probe.py
+probe.spec
+tmp_shell.py
+_chk.py
+d*_out.txt
+d*_err.txt
+d*_env.txt
+d*_event.txt
+d*_path.txt
+d*_run.txt
+tmp_shell_out.txt
+
+# ---- 调试截图 / 演示图 ----
+ui*_*.png
+preview_*.png
+_matt_*.png
+*_demo.png
+尺寸上限对比.png
+抠图效果验证.png
+箭头带缝隙预览.png

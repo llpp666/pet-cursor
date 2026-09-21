@@ -1,0 +1,285 @@
+{
+  "license": "OpenMoji (CC BY-SA 4.0) / Twemoji (CC-BY 4.0)",
+  "items": [
+    {
+      "id": "1f98b",
+      "name": "蝴蝶",
+      "emoji": "🦋",
+      "cat": "昆虫",
+      "file": "icons/1f98b.png"
+    },
+    {
+      "id": "1f41d",
+      "name": "蜜蜂",
+      "emoji": "🐝",
+      "cat": "昆虫",
+      "file": "icons/1f41d.png"
+    },
+    {
+      "id": "1f41c",
+      "name": "蚂蚁",
+      "emoji": "🐜",
+      "cat": "昆虫",
+      "file": "icons/1f41c.png"
+    },
+    {
+      "id": "1f41e",
+      "name": "瓢虫",
+      "emoji": "🐞",
+      "cat": "昆虫",
+      "file": "icons/1f41e.png"
+    },
+    {
+      "id": "1fab2",
+      "name": "甲虫",
+      "emoji": "🪲",
+      "cat": "昆虫",
+      "file": "icons/1fab2.png"
+    },
+    {
+      "id": "1f997",
+      "name": "蟋蟀",
+      "emoji": "🦗",
+      "cat": "昆虫",
+      "file": "icons/1f997.png"
+    },
+    {
+      "id": "1f99f",
+      "name": "蚊子",
+      "emoji": "🦟",
+      "cat": "昆虫",
+      "file": "icons/1f99f.png"
+    },
+    {
+      "id": "1f577",
+      "name": "蜘蛛",
+      "emoji": "🕷",
+      "cat": "昆虫",
+      "file": "icons/1f577.png"
+    },
+    {
+      "id": "1f982",
+      "name": "蝎子",
+      "emoji": "🦂",
+      "cat": "昆虫",
+      "file": "icons/1f982.png"
+    },
+    {
+      "id": "1f41b",
+      "name": "毛毛虫",
+      "emoji": "🐛",
+      "cat": "昆虫",
+      "file": "icons/1f41b.png"
+    },
+    {
+      "id": "1fab3",
+      "name": "蟑螂",
+      "emoji": "🪳",
+      "cat": "昆虫",
+      "file": "icons/1fab3.png"
+    },
+    {
+      "id": "1fab1",
+      "name": "蚯蚓",
+      "emoji": "🪱",
+      "cat": "昆虫",
+      "file": "icons/1fab1.png"
+    },
+    {
+      "id": "1f40c",
+      "name": "蜗牛",
+      "emoji": "🐌",
+      "cat": "昆虫",
+      "file": "icons/1f40c.png"
+    },
+    {
+      "id": "1f578",
+      "name": "蜘蛛网",
+      "emoji": "🕸",
+      "cat": "昆虫",
+      "file": "icons/1f578.png"
+    },
+    {
+      "id": "1f431",
+      "name": "猫",
+      "emoji": "🐱",
+      "cat": "动物",
+      "file": "icons/1f431.png"
+    },
+    {
+      "id": "1f436",
+      "name": "狗",
+      "emoji": "🐶",
+      "cat": "动物",
+      "file": "icons/1f436.png"
+    },
+    {
+      "id": "1f98a",
+      "name": "狐狸",
+      "emoji": "🦊",
+      "cat": "动物",
+      "file": "icons/1f98a.png"
+    },
+    {
+      "id": "1f43c",
+      "name": "熊猫",
+      "emoji": "🐼",
+      "cat": "动物",
+      "file": "icons/1f43c.png"
+    },
+    {
+      "id": "1f430",
+      "name": "兔子",
+      "emoji": "🐰",
+      "cat": "动物",
+      "file": "icons/1f430.png"
+    },
+    {
+      "id": "1f407",
+      "name": "小兔",
+      "emoji": "🐇",
+      "cat": "动物",
+      "file": "icons/1f407.png"
+    },
+    {
+      "id": "1f43f",
+      "name": "松鼠",
+      "emoji": "🐿",
+      "cat": "动物",
+      "file": "icons/1f43f.png"
+    },
+    {
+      "id": "1f994",
+      "name": "刺猬",
+      "emoji": "🦔",
+      "cat": "动物",
+      "file": "icons/1f994.png"
+    },
+    {
+      "id": "1f438",
+      "name": "青蛙",
+      "emoji": "🐸",
+      "cat": "动物",
+      "file": "icons/1f438.png"
+    },
+    {
+      "id": "1f422",
+      "name": "乌龟",
+      "emoji": "🐢",
+      "cat": "动物",
+      "file": "icons/1f422.png"
+    },
+    {
+      "id": "1f426",
+      "name": "小鸟",
+      "emoji": "🐦",
+      "cat": "动物",
+      "file": "icons/1f426.png"
+    },
+    {
+      "id": "1f427",
+      "name": "企鹅",
+      "emoji": "🐧",
+      "cat": "动物",
+      "file": "icons/1f427.png"
+    },
+    {
+      "id": "1f989",
+      "name": "猫头鹰",
+      "emoji": "🦉",
+      "cat": "动物",
+      "file": "icons/1f989.png"
+    },
+    {
+      "id": "1f99c",
+      "name": "鹦鹉",
+      "emoji": "🦜",
+      "cat": "动物",
+      "file": "icons/1f99c.png"
+    },
+    {
+      "id": "1f981",
+      "name": "狮子",
+      "emoji": "🦁",
+      "cat": "动物",
+      "file": "icons/1f981.png"
+    },
+    {
+      "id": "1f992",
+      "name": "长颈鹿",
+      "emoji": "🦒",
+      "cat": "动物",
+      "file": "icons/1f992.png"
+    },
+    {
+      "id": "1f428",
+      "name": "考拉",
+      "emoji": "🐨",
+      "cat": "动物",
+      "file": "icons/1f428.png"
+    },
+    {
+      "id": "1f987",
+      "name": "蝙蝠",
+      "emoji": "🦇",
+      "cat": "动物",
+      "file": "icons/1f987.png"
+    },
+    {
+      "id": "1f419",
+      "name": "章鱼",
+      "emoji": "🐙",
+      "cat": "动物",
+      "file": "icons/1f419.png"
+    },
+    {
+      "id": "1f42c",
+      "name": "海豚",
+      "emoji": "🐬",
+      "cat": "动物",
+      "file": "icons/1f42c.png"
+    },
+    {
+      "id": "1f420",
+      "name": "热带鱼",
+      "emoji": "🐠",
+      "cat": "动物",
+      "file": "icons/1f420.png"
+    },
+    {
+      "id": "1f988",
+      "name": "鲨鱼",
+      "emoji": "🦈",
+      "cat": "动物",
+      "file": "icons/1f988.png"
+    },
+    {
+      "id": "1f984",
+      "name": "独角兽",
+      "emoji": "🦄",
+      "cat": "奇幻",
+      "file": "icons/1f984.png"
+    },
+    {
+      "id": "1f409",
+      "name": "龙",
+      "emoji": "🐉",
+      "cat": "奇幻",
+      "file": "icons/1f409.png"
+    },
+    {
+      "id": "1f996",
+      "name": "霸王龙",
+      "emoji": "🦖",
+      "cat": "奇幻",
+      "file": "icons/1f996.png"
+    },
+    {
+      "id": "1f995",
+      "name": "长颈龙",
+      "emoji": "🦕",
+      "cat": "奇幻",
+      "file": "icons/1f995.png"
+    }
+  ]
+}
