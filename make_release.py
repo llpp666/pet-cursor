@@ -4,10 +4,14 @@
 用法：
     python make_release.py              # 先 pyinstaller 小虫光标.spec，再跑这个
 
-产物：release_pkg/小虫光标-Windows.zip
+产物：release_pkg/PetCursor-Windows.zip
 
 ⚠️ 发布包里绝不能带私人数据：本脚本会显式排除 user_icons/ 与 小蝴蝶编号.json，
    以免把自己上传的图、自己的下载计数一起分发出去。
+
+⚠️ zip 文件名用 ASCII：GitHub Releases 上传中文文件名的 asset 会把中文吃掉
+   （实测 `小虫光标-Windows.zip` 变成 `-Windows.zip`），所以对外分发一律用英文名的 zip，
+   里面的文件夹仍可以是中文。
 """
 import os
 import shutil
@@ -18,7 +22,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(BASE, "dist", "小虫光标")
 OUT_DIR = os.path.join(BASE, "release_pkg")
 PKG = os.path.join(OUT_DIR, "小虫光标")
-ZIP = os.path.join(OUT_DIR, "小虫光标-Windows.zip")
+ZIP = os.path.join(OUT_DIR, "PetCursor-Windows.zip")
 
 # 放进发布包的附加文件（相对 BASE）
 EXTRA = ["启动工具.bat", "community.example.json", "使用说明.txt",

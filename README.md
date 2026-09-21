@@ -10,7 +10,7 @@
 ### 普通用户（不用装 Python）
 
 到 **[Releases 页面](https://github.com/llpp666/pet-cursor/releases)** 下载
-`小虫光标-Windows.zip`，**解压到任意文件夹**（不要直接在压缩包里运行），
+`PetCursor-Windows.zip`（约 45 MB），**解压到任意文件夹**（不要直接在压缩包里运行），
 双击 **`启动工具.bat`** 即可。整个文件夹可以拷到 U 盘带走在别的电脑上用。
 
 > ⚠️ Windows 可能会弹「Windows 已保护你的电脑」（SmartScreen），
