@@ -50,10 +50,12 @@ d*_run.txt
 tmp_shell_out.txt
 
 # ---- 推送/网络排查临时输出 ----
-push_*.txt
+push*.txt
+pre_commit.txt
 proxy_*.txt
 verify*.txt
 _verify.py
+_v.txt
 
 # ---- 调试截图 / 演示图 ----
 ui*_*.png
