@@ -1,7 +1,23 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
 title 小虫光标 · 加图标
+
+rem 定位源码目录：本 bat 可以放在桌面「小虫光标」文件夹里，源码在别的路径
+set "SRC=%~dp0"
+if not exist "%SRC%add_icon.py" (
+  for /d %%d in ("%USERPROFILE%\WorkBuddy\*") do (
+    if exist "%%d\pet-cursor\add_icon.py" set "SRC=%%d\pet-cursor\"
+  )
+)
+rem 兜底：直接认本机源码目录
+if not exist "%SRC%add_icon.py" if exist "C:\Users\lenovo\WorkBuddy\2026-09-19-21-25-32\pet-cursor\add_icon.py" set "SRC=C:\Users\lenovo\WorkBuddy\2026-09-19-21-25-32\pet-cursor\"
+if not exist "%SRC%add_icon.py" (
+  echo 没找到源码文件 add_icon.py
+  echo 请把本 bat 放到小虫光标源码文件夹里，或手动指定源码路径。
+  pause
+  exit /b 1
+)
+cd /d "%SRC%"
 
 rem 用法：把图片拖到本文件上，或双击后手动填路径
 set "PY=python"

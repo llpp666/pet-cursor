@@ -1,7 +1,23 @@
 @echo off
 chcp 65001 >nul
-cd /d "%~dp0"
 title 小虫光标 · 打包发布
+
+rem 定位源码目录：本 bat 可以放在桌面「小虫光标」文件夹里，源码在别的路径
+set "SRC=%~dp0"
+if not exist "%SRC%小虫光标.spec" (
+  for /d %%d in ("%USERPROFILE%\WorkBuddy\*") do (
+    if exist "%%d\pet-cursor\小虫光标.spec" set "SRC=%%d\pet-cursor\"
+  )
+)
+rem 兜底：直接认本机源码目录
+if not exist "%SRC%小虫光标.spec" if exist "C:\Users\lenovo\WorkBuddy\2026-09-19-21-25-32\pet-cursor\小虫光标.spec" set "SRC=C:\Users\lenovo\WorkBuddy\2026-09-19-21-25-32\pet-cursor\"
+if not exist "%SRC%小虫光标.spec" (
+  echo 没找到源码文件 小虫光标.spec
+  echo 请把本 bat 放到小虫光标源码文件夹里，或手动指定源码路径。
+  pause
+  exit /b 1
+)
+cd /d "%SRC%"
 
 set "PY=python"
 python -c "import sys" >nul 2>nul || set "PY=py"
