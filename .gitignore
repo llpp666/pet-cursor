@@ -35,6 +35,7 @@ d8_probe.py
 d9_probe.py
 d10_probe.py
 e2e_matting.py
+e2e_privacy.py
 test_community.py
 probe.py
 probe.spec

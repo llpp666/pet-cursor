@@ -35,6 +35,7 @@ import butterfly  # noqa: E402
 import community  # noqa: E402
 import cursor_tools  # noqa: E402
 import matting  # noqa: E402
+import privacy  # noqa: E402
 from PIL import Image  # noqa: E402
 
 WEB_DIR = os.path.join(DATA_DIR, "web")
@@ -222,14 +223,21 @@ except Exception:
 
 
 def items_for():
-    """内置图标库 + 社区图标库（去重）+ 用户上传的公共/私人图"""
+    """内置图标库 + 社区图标库（去重）+ 用户上传的公共/私人图
+
+    私人区上锁时，私人图不进列表 —— 于是预览、应用、抠图、删除全部自然失效，
+    不需要在每个接口各写一遍判断。
+    """
     out = list(CATALOG["items"])
     known = {it.get("id") for it in out}
     for it in community.community_items():
         if it.get("id") not in known:
             out.append(it)
             known.add(it.get("id"))
-    return out + load_user_items()
+    user = load_user_items()
+    if privacy.is_locked():
+        user = [it for it in user if it.get("scope") != "private"]
+    return out + user
 
 
 def public_items_for_frontend(items):
@@ -292,7 +300,11 @@ class Handler(BaseHTTPRequestHandler):
                 "roles": [{"key": k, "label": v} for k, v in cursor_tools.ROLES],
                 "dirs": {"public": SHARED_DIR, "private": PRIVATE_DIR},
                 "community": community.status(),
+                "privacy": privacy.status(),
             })
+
+        if p == "/api/private/status":
+            return self._json(privacy.status())
 
         if p == "/api/community/status":
             return self._json(community.status())
@@ -483,6 +495,8 @@ class Handler(BaseHTTPRequestHandler):
                 icon_id = "u" + uuid.uuid4().hex[:8]
                 name = (payload.get("name") or "我的图片").strip()[:16] or "我的图片"
                 scope = "private" if payload.get("scope") == "private" else "public"
+                if scope == "private" and privacy.is_locked():
+                    return self._json({"ok": False, "error": "私人区已锁定，先解锁再传"}, 403)
                 os.makedirs(dir_for(scope), exist_ok=True)
                 img.save(os.path.join(dir_for(scope), icon_id + ".png"), "PNG")
 
@@ -499,6 +513,9 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 icon_id = payload.get("icon_id")
                 scope = "private" if payload.get("scope") == "private" else "public"
+                if privacy.is_locked():
+                    # 锁着的时候私人图根本不在索引里，移进移出都要先解锁
+                    return self._json({"ok": False, "error": "私人区已锁定，先解锁再移动"}, 403)
                 it = ICONS.get(icon_id)
                 if not it or it.get("cat") != "我的图片":
                     return self._json({"ok": False, "error": "只能移动自己上传的图片"}, 400)
@@ -523,11 +540,36 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 return self._json({"ok": False, "error": f"{type(e).__name__}: {e}"}, 500)
 
+        # -------------------------------------------------- 私人区口令锁
+        if p == "/api/private/unlock":
+            ok, msg = privacy.unlock(payload.get("pwd", ""))
+            return self._json({"ok": ok, "msg": msg, **privacy.status()},
+                              200 if ok else 401)
+
+        if p == "/api/private/lock":
+            _ok, msg = privacy.lock()
+            return self._json({"ok": True, "msg": msg, **privacy.status()})
+
+        if p == "/api/private/password":
+            try:
+                if payload.get("remove"):
+                    ok, msg = privacy.clear_password(payload.get("old", ""))
+                else:
+                    ok, msg = privacy.set_password(payload.get("old", ""),
+                                                   payload.get("new", ""),
+                                                   force=bool(payload.get("force")))
+                return self._json({"ok": ok, "msg": msg, **privacy.status()},
+                                  200 if ok else 400)
+            except Exception as e:
+                return self._json({"ok": False, "error": f"{type(e).__name__}: {e}"}, 500)
+
         return self._json({"ok": False, "error": "unknown endpoint"}, 404)
 
     def do_DELETE(self):
         icon_id = urlparse(self.path).path.rsplit("/", 1)[-1]
         it = index_for().get(icon_id)
+        if not it and privacy.is_locked():
+            return self._json({"ok": False, "error": "私人区已锁定，先解锁再操作"}, 403)
         if not it or it.get("cat") != "我的图片":
             return self._json({"ok": False, "error": "只能删除自己上传的图片"}, 400)
         try:

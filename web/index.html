@@ -75,6 +75,39 @@
   .rd input{accent-color:var(--brand)}
   .rd:has(input:checked){background:var(--brand-soft);border-color:var(--brand)}
   .scope-hint{font-size:12px;color:var(--muted);line-height:1.7;margin-top:8px}
+  .privlock{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin-top:10px;padding:9px 12px;border-radius:10px;font-size:12.5px;line-height:1.6;
+    background:var(--brand-soft);border:1px solid var(--brand);color:var(--text);
+  }
+  .privlock.locked{background:#f1f0ff;border-color:#cdc7f5}
+  .privlock b{font-weight:600}
+  .privlock button{
+    font-size:12px;padding:3px 10px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--brand);background:#fff;color:var(--text);
+  }
+  .privlock button:hover{background:var(--brand);color:#fff}
+  .privlock.locked button{border-color:#cdc7f5}
+  .privlock.locked button:hover{background:#5b4bd6;border-color:#5b4bd6;color:#fff}
+  .modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.35);
+    display:flex;align-items:center;justify-content:center;z-index:50;
+  }
+  .modal[hidden]{display:none}
+  .modal-box{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:20px;width:320px;max-width:90vw;
+  }
+  .modal-box h3{margin:0 0 12px;font-size:15px;font-weight:600}
+  .modal-box input{
+    width:100%;padding:8px 10px;font-size:14px;margin-bottom:8px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);
+  }
+  .modal-btns{display:flex;gap:8px;margin-top:6px}
+  .modal-btns button{flex:1;padding:7px;font-size:13px;border-radius:8px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;color:var(--text)}
+  .modal-btns button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .modal-tip{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
   .badge{
     position:absolute;top:6px;left:6px;font-size:10px;padding:1px 6px;border-radius:999px;
     background:var(--brand-soft);color:#1d6e4c;border:1px solid var(--brand);
@@ -265,6 +298,7 @@
       </label>
     </div>
     <div class="scope-hint" id="scopeHint"></div>
+    <div class="privlock" id="privLock"></div>
     <label class="matt-ck">
       <input type="checkbox" id="autoMatt">
       上传后自动抠图 · AI 去除杂乱背景（照片、截图等带背景的图建议开启）
@@ -334,6 +368,19 @@
   </div>
 </div>
 
+<div class="modal" id="pwModal" hidden>
+  <div class="modal-box">
+    <h3 id="pwTitle">口令</h3>
+    <input type="password" id="pwInput" placeholder="请输入口令" autocomplete="off">
+    <input type="password" id="pwInput2" placeholder="再输一次新口令" autocomplete="off" hidden>
+    <div class="modal-btns">
+      <button class="primary" id="pwOk">确定</button>
+      <button id="pwCancel">取消</button>
+    </div>
+    <div class="modal-tip" id="pwTip"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 
@@ -341,7 +388,8 @@
 const state = { items: [], cat: "全部", size: 64, hotspot: "topleft",
                  tipShow: true, tipColor: "ffffff", scale: 1.0,
                  roles: ["Arrow","Hand"], current: null, rolesInit: false,
-                 roleDefs: [], guard: null };
+                 roleDefs: [], guard: null,
+                 privacy: { enabled:false, locked:false } };
 
 function api(path, opts){
   opts = opts || {};
@@ -527,12 +575,91 @@ async function apply(id){
 async function reload(){
   const d = await api("/api/catalog");
   state.items = d.items || [];
+  if(d.privacy) state.privacy = d.privacy;
+  renderPrivLock();
   renderCats(); renderGrid();
 }
+
+/* ---------------- 私人区口令锁 ----------------
+   说明：私人图片只是被「从列表里藏起来」，并没有加密文件。
+   防的是别人随手打开软件看见；重设口令会让它们重新显示——这一点必须对用户讲清楚。*/
+function renderPrivLock(){
+  const el = $("#privLock"); if(!el) return;
+  const p = state.privacy || {enabled:false, locked:false};
+  el.classList.toggle("locked", !!p.locked);
+  if(!p.enabled){
+    el.innerHTML = `<b>🔓 私人区没设口令</b> —— 能登上你这台电脑的人，打开软件就能看到私人图片。
+      <button id="pwSet">设置口令</button>`;
+    $("#pwSet").onclick = ()=>askPw("set");
+  } else if(p.locked){
+    el.innerHTML = `<b>🔒 私人区已锁定</b> —— 私人图片已隐藏，看不到、也用不了。
+      <button id="pwUn">解锁</button><button id="pwReset">忘了口令</button>`;
+    $("#pwUn").onclick = ()=>askPw("unlock");
+    $("#pwReset").onclick = ()=>{
+      if(confirm("重设口令会让你重新看到全部私人图片。\n\n（私人图片只是被隐藏，没有加密，所以忘了口令没有别的办法。）\n\n确定重设吗？")) askPw("reset");
+    };
+  } else {
+    el.innerHTML = `<b>🔓 私人区已解锁</b> —— 私人图片现在可见。
+      <button id="pwLock">立即锁定</button><button id="pwChange">修改口令</button><button id="pwOff">关闭口令</button>`;
+    $("#pwLock").onclick = async ()=>{
+      await api("/api/private/lock", {method:"POST", body:{}});
+      toast("私人区已锁定"); await reload();
+    };
+    $("#pwChange").onclick = ()=>askPw("change");
+    $("#pwOff").onclick = ()=>askPw("off");
+  }
+}
+
+let pwMode = null;
+function askPw(mode){
+  pwMode = mode;
+  const two = (mode === "set" || mode === "change" || mode === "reset");
+  $("#pwTitle").textContent = ({
+    set:"设置私人区口令", unlock:"解锁私人区", change:"修改口令",
+    reset:"重设口令", off:"关闭口令锁"})[mode] || "口令";
+  $("#pwInput").value = "";
+  $("#pwInput").placeholder = (mode === "off") ? "输入当前口令" : "请输入口令";
+  $("#pwInput2").hidden = !two;
+  $("#pwInput2").value = "";
+  $("#pwTip").textContent = ({
+    set:"设了口令之后，别人打开软件看不到私人图片；软件每次重启都要重新输一次。",
+    change:"需要先输对原口令。",
+    reset:"新口令至少 4 位。重设后原来的私人图片会重新显示出来。",
+    off:"关闭后私人区恢复成不设防，谁打开都能看。",
+    unlock:""}[mode] || "");
+  $("#pwModal").hidden = false;
+  $("#pwInput").focus();
+}
+function closePw(){ $("#pwModal").hidden = true; pwMode = null; }
+$("#pwCancel").onclick = closePw;
+$("#pwModal").onclick = e => { if(e.target === $("#pwModal")) closePw(); };
+$("#pwOk").onclick = async ()=>{
+  const a = $("#pwInput").value, b = $("#pwInput2").value;
+  const two = (pwMode === "set" || pwMode === "change" || pwMode === "reset");
+  if(two){
+    if(a.length < 4){ toast("口令至少 4 位"); return; }
+    if(a !== b){ toast("两次输入的口令不一样"); return; }
+  }
+  let r;
+  try{
+    if(pwMode === "unlock")      r = await api("/api/private/unlock", {method:"POST", body:{pwd:a}});
+    else if(pwMode === "off")    r = await api("/api/private/password", {method:"POST", body:{remove:true, old:a}});
+    else if(pwMode === "change") r = await api("/api/private/password", {method:"POST", body:{old:a, new:b}});
+    else if(pwMode === "reset")  r = await api("/api/private/password", {method:"POST", body:{new:a, force:true}});
+    else                         r = await api("/api/private/password", {method:"POST", body:{new:a}});
+  }catch(e){ toast(String(e)); return; }
+  if(r.ok){ closePw(); toast(r.msg || "已生效"); await reload(); }
+  else toast(r.msg || r.error || "操作失败");
+};
+$("#pwInput").addEventListener("keydown", e=>{ if(e.key === "Enter") $("#pwOk").click(); });
+$("#pwInput2").addEventListener("keydown", e=>{ if(e.key === "Enter") $("#pwOk").click(); });
 
 async function uploadFile(f){
   if(!f.type.startsWith("image/")){ toast("只支持图片文件"); return; }
   const scope = (document.querySelector('input[name=scope]:checked')||{}).value || "private";
+  if(scope === "private" && (state.privacy||{}).locked){
+    toast("私人区已锁定，先解锁再上传到私人区"); return;
+  }
   toast("正在上传…");
   let data;
   try{
@@ -671,6 +798,8 @@ $("#restoreBtn").onclick = async () => {
 
 api("/api/catalog").then(d=>{
   state.items = d.items || [];
+  if(d.privacy) state.privacy = d.privacy;
+  renderPrivLock();
   if(d.dirs){
     $("#scopeHint").innerHTML =
       `· 公共区：<b>${d.dirs.public}</b> —— 存在软件文件夹里，把软件拷给别人，这些图也一起带过去。<br>` +
